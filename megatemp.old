@@ -1,0 +1,117 @@
+/* Arduino DS18B20 temp sensor tutorial
+   More info: http://www.ardumotive.com/how-to-use-the-ds18b20-temperature-sensor-en.html
+   Date: 19/6/2015 // www.ardumotive.com */
+
+
+#include <DHT.h>
+#include <SPI.h>
+#include <Ethernet.h>
+#include <PubSubClient.h>
+
+#define DHTTYPE DHT22
+#define ONE_WIRE_BUS 48
+#define DHT_NUMBER 2
+
+
+// Update these with values suitable for your network.
+byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0x99 };
+IPAddress server(92,222,202,39);
+
+EthernetClient ethClient;
+PubSubClient mclient(ethClient);
+
+int DHT_PINS[DHT_NUMBER] = { 48, 46 };
+DHT *ht_sensors[DHT_NUMBER];
+//DHT cacat(48,DHTTYPE);
+long lastReadingTime = millis();
+long lastReconnectAttempt = 0;
+
+boolean reconnect() {
+  if (mclient.connect("arduinoClient")) {
+    // ... and resubscribe
+    mclient.subscribe("inTopic");
+		Serial.println("Connected to mqtt");
+  }
+  return mclient.connected();
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (unsigned int i=0;i<length;i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void setup(void)
+{
+
+  Serial.begin(9600); //Begin serial communication
+  Serial.println("Arduino Digital Temperature // Serial Monitor Version"); //Print a message
+
+
+  for (byte i=0; i < DHT_NUMBER; i++) {
+    ht_sensors[i] = new DHT(DHT_PINS[i],DHTTYPE);
+    ht_sensors[i]->begin();
+  }
+
+  mclient.setServer(server, 1883);
+  mclient.setCallback(callback);
+
+  if (Ethernet.begin(mac) != 0) {
+    Serial.println(Ethernet.localIP());
+  }
+
+  Serial.println("Setup done");
+
+}
+void loop(void)
+{ 
+	if (!mclient.connected()) {
+		if (millis() - lastReconnectAttempt > 5000) {
+			lastReconnectAttempt = millis();
+			if (reconnect()) {
+				lastReconnectAttempt = 0;
+			}
+		}
+  }
+  else {
+    mclient.loop();
+  }
+
+  if (millis() - lastReadingTime > 5000){
+
+    for (byte i=0; i < DHT_NUMBER; i++) {
+      float h = ht_sensors[i]->readHumidity();
+      float t = ht_sensors[i]->readTemperature();
+      //float h = cacat.readHumidity();
+      //float t = cacat.readTemperature();
+      float d = t - ( (100 - h) / 5);
+      String msg = String(i) + " t" + String(t) + " h" + String(h) + " d" + String(d);
+//      Serial.print(i);
+//      Serial.print(" h");
+//      Serial.print(h);
+//      Serial.print(" t");
+//      Serial.print(t);
+//      Serial.print(" d");
+//      Serial.println(d);
+        Serial.println(msg);
+			String buff = "";
+      buff += "temperature{sensor=\""; // shows pre-scaled value 
+      buff += i;
+      buff += "\",level=\"1\",zone=\"ambient\"} ";
+      buff += t;
+      mclient.publish("sensors",buff.c_str());
+			buff = "";
+			buff += "humidity{sensor=\""; // shows pre-scaled value 
+      buff += i;
+      buff += "\",level=\"1\",zone=\"ambient\"} ";
+      buff += h;
+      mclient.publish("sensors",buff.c_str());
+    }
+    lastReadingTime = millis();
+  }
+
+}

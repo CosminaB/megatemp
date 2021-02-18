@@ -1,2 +1,2 @@
 # megatemp
-Arduino mega temperature monitor
+Arduino mega temperature controller

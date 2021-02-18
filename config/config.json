@@ -1,0 +1,61 @@
+{
+# local temperature sensors groups (ds18b20, onewire)
+# p = communication pin
+# pw = power pin
+    "lt":[
+        { "p": 22, "pw": 25 }
+    ],
+
+# mappings for controlled devices
+# p = array of pumps to be controlled
+# t = temperature source to use (from ts key)
+# s = temperature initial setpoint; can be modified via commands
+# h = initial hysteresis; can be modified via commands
+# a = automatic or manual control
+# o = override seconds; if control is set to auto, external commands will override for this number of secs
+# m = mode; values: 1 = heating, 0 = cooling; in heating mode pump is on at low temp and off at high temp
+# n = name
+    "m":[
+        { "p": [7], "t":2, "s": 29 , "h": 6, "a": 1, "o": 1200, "n": "buffer", "m":1 },
+        { "p": [4], "t":7, "s": 24, "h": 0.1, "a": 1, "o": 1200, "n": "parter", "m": 1 },
+        { "p": [5], "t":7, "s": 23, "h": 0.1, "a": 1, "o": 1200, "n": "etaj", "m": 1 },
+        { "p": [2], "t":0, "s": 37, "h": 2, "a": 0, "o": 1200, "n": "acmre", "m": 1 },
+        { "p": [0], "t":5, "s": 55, "h": 2, "a": 1, "o": 1200, "n": "boiler", "m": 1 },
+        { "p": [3], "t":8, "s": -30, "h": 2, "a": 0, "o": 1200, "n": "defrost", "m": 1 },
+        { "p": [1], "t":9, "s": 28, "h": 0.5, "a": 1, "o": 1200, "n": "srvcooling", "m": 0 }
+    ],
+
+# pumps (and other devices to be controlled)
+# p = pin
+# m = minimum flap delay in seconds (so we don't start/stop very often)
+# n = name
+    "p":[
+        { "p": 38, "m": 10, "n": "0_boiler" },
+        { "p": 39, "m": 10, "n": "1_srvfan" },
+        { "p": 40, "m": 120, "n": "2_acmre" },
+        { "p": 41, "m": 120, "n": "3_degivrare" },
+        { "p": 42, "m": 120, "n": "4_parter" },
+        { "p": 43, "m": 120, "n": "5_etaj" },
+        { "p": 44, "m": 120, "n": "6_cooling" },
+        { "p": 47, "m": 360, "n": "7_heatpump" }
+    ],
+
+# temperature sources
+# t = type; values 0=local, 1=mqtt external
+# lg = local group (from lt key)
+# li = local index (the number of the device in the lt group)
+# n = name
+# tp = mqtt topic for type 1 sources
+    "ts":[
+        { "t": 0 , "lg": 0, "li": 0, "n": "acmre"},
+        { "t": 0 , "lg": 0, "li": 1, "n": "geo_out"},
+        { "t": 0 , "lg": 0, "li": 2, "n": "buffer"},
+        { "t": 0 , "lg": 0, "li": 3, "n": "hp_out"},
+        { "t": 0 , "lg": 0, "li": 4, "n": "hp_in"},
+        { "t": 0 , "lg": 0, "li": 5, "n": "boiler"},
+        { "t": 0 , "lg": 0, "li": 6, "n": "geo_in"},
+        { "t": 1 , "tp": "metrics/10/temperature/0/living", "n": "living_external"},
+        { "t": 1 , "tp": "metrics/0/temperature/outside_external", "n": "outside_external"},
+        { "t": 1 , "tp": "metrics/10/temperature/0/service", "n": "service_external"}
+    ]
+}
